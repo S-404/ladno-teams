@@ -1,0 +1,10 @@
+{{define "partials/admin/workspace_row"}}
+<tr id="workspace-{{.Guid}}">
+	<td>{{.Name}}</td>
+	<td>{{.Version}}</td>
+	<td>{{.TeamName}}</td>
+	<td class="actions">
+		<button class="btn-danger" hx-delete="/admin/workspaces/{{.Guid}}" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete workspace?">Delete</button>
+	</td>
+</tr>
+{{end}}

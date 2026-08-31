@@ -1,0 +1,17 @@
+{{define "partials/admin/modals/invite"}}
+<div class="modal-backdrop">
+	<div class="modal-card">
+		<h2>Create Invite</h2>
+		<form hx-post="/admin/invites" {{modalFormHTMX}}>
+			<label for="team_guid">Team</label>
+			<select id="team_guid" name="team_guid" required>
+				{{template "ui/team_select" (teamSelect .Teams .SelectedTeamGUID)}}
+			</select>
+			<div class="modal-actions">
+				<button type="button" onclick="document.getElementById('modal-host').innerHTML=''">Cancel</button>
+				<button type="submit" class="btn-primary">Create</button>
+			</div>
+		</form>
+	</div>
+</div>
+{{end}}

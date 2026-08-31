@@ -5,6 +5,7 @@ import (
 	"ladno-teams/internal/entity/dto"
 	"ladno-teams/internal/exception"
 	"ladno-teams/internal/service"
+	"ladno-teams/internal/views"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -44,17 +45,19 @@ type IAdminHandler interface {
 type AdminHandler struct {
 	BaseHandler
 	services *service.Service
+	views    *views.Engine
 }
 
-func NewAdminHandler(services *service.Service, validate *validator.Validate) *AdminHandler {
+func NewAdminHandler(services *service.Service, validate *validator.Validate, viewsEngine *views.Engine) *AdminHandler {
 	return &AdminHandler{
 		BaseHandler: *NewBaseHandler(validate),
 		services:    services,
+		views:       viewsEngine,
 	}
 }
 
 func (h *AdminHandler) Index(c *gin.Context) {
-	renderHTML(c, adminLayout(adminDashboard()))
+	renderAdminPage(h.views, c, "pages/admin/dashboard", nil)
 }
 
 func (h *AdminHandler) Users(c *gin.Context) {
@@ -63,7 +66,7 @@ func (h *AdminHandler) Users(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminUsersSection(users))
+	renderView(h.views, c, "partials/admin/users_section", views.AdminUsersSection{Users: users})
 }
 
 func (h *AdminHandler) Invites(c *gin.Context) {
@@ -72,7 +75,7 @@ func (h *AdminHandler) Invites(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminInvitesSection(invites))
+	renderView(h.views, c, "partials/admin/invites_section", views.AdminInvitesSection{Invites: invites})
 }
 
 func (h *AdminHandler) Teams(c *gin.Context) {
@@ -81,7 +84,7 @@ func (h *AdminHandler) Teams(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminTeamsSection(teams))
+	renderView(h.views, c, "partials/admin/teams_section", views.AdminTeamsSection{Teams: teams})
 }
 
 func (h *AdminHandler) Teammates(c *gin.Context) {
@@ -90,7 +93,7 @@ func (h *AdminHandler) Teammates(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminTeammatesSection(teammates))
+	renderView(h.views, c, "partials/admin/teammates_section", views.AdminTeammatesSection{Teammates: teammates})
 }
 
 func (h *AdminHandler) Workspaces(c *gin.Context) {
@@ -99,7 +102,7 @@ func (h *AdminHandler) Workspaces(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminWorkspacesSection(workspaces))
+	renderView(h.views, c, "partials/admin/workspaces_section", views.AdminWorkspacesSection{Workspaces: workspaces})
 }
 
 func (h *AdminHandler) WorkspaceRoles(c *gin.Context) {
@@ -108,7 +111,7 @@ func (h *AdminHandler) WorkspaceRoles(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminWorkspaceRolesSection(roles))
+	renderView(h.views, c, "partials/admin/workspace_roles_section", views.AdminWorkspaceRolesSection{Roles: roles})
 }
 
 func (h *AdminHandler) ModalInvite(c *gin.Context) {
@@ -117,11 +120,14 @@ func (h *AdminHandler) ModalInvite(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminInviteModal(teams, c.Query("team_guid")))
+	renderView(h.views, c, "partials/admin/modals/invite", views.AdminInviteModal{
+		Teams:            teams,
+		SelectedTeamGUID: c.Query("team_guid"),
+	})
 }
 
 func (h *AdminHandler) ModalTeam(c *gin.Context) {
-	renderHTML(c, adminTeamModal())
+	renderView(h.views, c, "partials/admin/modals/team", nil)
 }
 
 func (h *AdminHandler) ModalWorkspace(c *gin.Context) {
@@ -130,7 +136,7 @@ func (h *AdminHandler) ModalWorkspace(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminWorkspaceModal(teams))
+	renderView(h.views, c, "partials/admin/modals/workspace", views.AdminWorkspaceModal{Teams: teams})
 }
 
 func (h *AdminHandler) ModalWorkspaceRole(c *gin.Context) {
@@ -144,13 +150,16 @@ func (h *AdminHandler) ModalWorkspaceRole(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminWorkspaceRoleModal(workspaces, users))
+	renderView(h.views, c, "partials/admin/modals/workspace_role", views.AdminWorkspaceRoleModal{
+		Workspaces: workspaces,
+		Users:      users,
+	})
 }
 
 func (h *AdminHandler) CreateInvite(c *gin.Context) {
 	teamGuid, ok := h.parseUUIDFromForm(c, "team_guid")
 	if !ok {
-		renderHTML(c, adminInviteModal(nil, "")+"<p>Invalid team</p>")
+		exception.HttpResponseException(c, exception.BadRequest("invalid team guid"))
 		return
 	}
 
@@ -164,7 +173,7 @@ func (h *AdminHandler) CreateInvite(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTMLCloseModal(c, adminInvitesSection(invites))
+	renderHTMLCloseModal(h.views, c, "partials/admin/invites_section", views.AdminInvitesSection{Invites: invites})
 }
 
 func (h *AdminHandler) CreateTeam(c *gin.Context) {
@@ -194,7 +203,7 @@ func (h *AdminHandler) CreateTeam(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTMLCloseModal(c, adminTeamsSection(teams))
+	renderHTMLCloseModal(h.views, c, "partials/admin/teams_section", views.AdminTeamsSection{Teams: teams})
 }
 
 func (h *AdminHandler) CreateWorkspace(c *gin.Context) {
@@ -225,7 +234,7 @@ func (h *AdminHandler) CreateWorkspace(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTMLCloseModal(c, adminWorkspacesSection(workspaces))
+	renderHTMLCloseModal(h.views, c, "partials/admin/workspaces_section", views.AdminWorkspacesSection{Workspaces: workspaces})
 }
 
 func (h *AdminHandler) CreateWorkspaceRole(c *gin.Context) {
@@ -254,7 +263,7 @@ func (h *AdminHandler) CreateWorkspaceRole(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTMLCloseModal(c, adminWorkspaceRolesSection(roles))
+	renderHTMLCloseModal(h.views, c, "partials/admin/workspace_roles_section", views.AdminWorkspaceRolesSection{Roles: roles})
 }
 
 func (h *AdminHandler) ToggleUserBlock(c *gin.Context) {
@@ -281,7 +290,7 @@ func (h *AdminHandler) ToggleUserBlock(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminUserRow(*view))
+	renderView(h.views, c, "partials/admin/user_row", *view)
 }
 
 func (h *AdminHandler) ToggleUserAdmin(c *gin.Context) {
@@ -308,7 +317,7 @@ func (h *AdminHandler) ToggleUserAdmin(c *gin.Context) {
 		exception.HttpResponseException(c, apiErr)
 		return
 	}
-	renderHTML(c, adminUserRow(*view))
+	renderView(h.views, c, "partials/admin/user_row", *view)
 }
 
 func (h *AdminHandler) UpdateUserAdmin(c *gin.Context) {
@@ -475,13 +484,4 @@ func (h *AdminHandler) parseUUIDFromForm(c *gin.Context, field string) (uuid.UUI
 		return uuid.Nil, false
 	}
 	return value, true
-}
-
-func renderHTML(c *gin.Context, content string) {
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
-}
-
-func renderHTMLCloseModal(c *gin.Context, content string) {
-	c.Header("HX-Trigger", `{"closeModal":{"target":"body"}}`)
-	renderHTML(c, content+`<div id="modal-host" hx-swap-oob="innerHTML"></div>`)
 }

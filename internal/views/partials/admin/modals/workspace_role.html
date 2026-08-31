@@ -1,0 +1,33 @@
+{{define "partials/admin/modals/workspace_role"}}
+<div class="modal-backdrop">
+	<div class="modal-card">
+		<h2>Create Workspace Role</h2>
+		<form hx-post="/admin/workspace_roles" {{modalFormHTMX}}>
+			<label for="workspace_guid">Workspace</label>
+			<select id="workspace_guid" name="workspace_guid" required>
+				<option value="">Select workspace</option>
+				{{range .Workspaces}}
+				<option value="{{.Guid}}">{{.Name}} ({{.TeamName}})</option>
+				{{end}}
+			</select>
+			<label for="teammate_guid">User</label>
+			<select id="teammate_guid" name="teammate_guid" required>
+				<option value="">Select user</option>
+				{{range .Users}}
+				<option value="{{.Guid}}">{{userLabel .}}</option>
+				{{end}}
+			</select>
+			<label for="role">Role</label>
+			<select id="role" name="role" required>
+				<option value="MAINTAINER">MAINTAINER</option>
+				<option value="DEVELOPER">DEVELOPER</option>
+				<option value="GUEST">GUEST</option>
+			</select>
+			<div class="modal-actions">
+				<button type="button" onclick="document.getElementById('modal-host').innerHTML=''">Cancel</button>
+				<button type="submit" class="btn-primary">Create</button>
+			</div>
+		</form>
+	</div>
+</div>
+{{end}}

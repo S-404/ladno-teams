@@ -1,0 +1,12 @@
+{{define "pages/auth/home_user"}}
+<div class="card home-card">
+	<h1>Welcome</h1>
+	<p class="subtitle">Signed in as <strong>{{.Login}}</strong></p>
+	<div class="home-actions">
+		<form method="POST" action="/logout" style="margin:0;">
+			<button type="submit" class="btn btn-outline">Sign out</button>
+		</form>
+	</div>
+	<p class="footer-link" style="margin-top:2rem;">For API access use <code>POST /api/auth/login</code> or the <code>token</code> cookie for refresh.</p>
+</div>
+{{end}}

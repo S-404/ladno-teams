@@ -1,0 +1,19 @@
+{{define "partials/admin/modals/workspace"}}
+<div class="modal-backdrop">
+	<div class="modal-card">
+		<h2>Create Workspace</h2>
+		<form hx-post="/admin/workspaces" {{modalFormHTMX}}>
+			<label for="name">Name</label>
+			<input id="name" name="name" type="text" required maxlength="255">
+			<label for="team_guid">Team</label>
+			<select id="team_guid" name="team_guid" required>
+				{{template "ui/team_select" (teamSelect .Teams "")}}
+			</select>
+			<div class="modal-actions">
+				<button type="button" onclick="document.getElementById('modal-host').innerHTML=''">Cancel</button>
+				<button type="submit" class="btn-primary">Create</button>
+			</div>
+		</form>
+	</div>
+</div>
+{{end}}

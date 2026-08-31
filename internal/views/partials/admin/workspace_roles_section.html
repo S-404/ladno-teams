@@ -1,0 +1,16 @@
+{{define "partials/admin/workspace_roles_section"}}
+<div class="admin-section">
+	{{template "ui/section_header" (sectionHeader "Workspace Roles" "Create" "/admin/modals/workspace-role")}}
+	{{template "ui/search_bar" .}}
+	<table class="admin-table">
+		<thead>
+			<tr><th>Team</th><th>Workspace</th><th>User</th><th>Role</th><th>Actions</th></tr>
+		</thead>
+		<tbody>
+			{{range .Roles}}
+			{{template "partials/admin/workspace_role_row" .}}
+			{{end}}
+		</tbody>
+	</table>
+</div>
+{{end}}

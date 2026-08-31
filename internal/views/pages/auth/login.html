@@ -1,0 +1,15 @@
+{{define "pages/auth/login"}}
+<div class="card">
+	<h1>Sign in</h1>
+	<p class="subtitle">Sign in to your Ladno Teams account</p>
+	{{template "ui/error_block" .ErrorMessage}}
+	<form method="POST" action="/login">
+		<label for="login">Login</label>
+		<input id="login" name="login" type="text" autocomplete="username" required value="{{.Login}}">
+		<label for="password">Password</label>
+		<input id="password" name="password" type="password" autocomplete="current-password" required>
+		<button type="submit" class="full">Sign in</button>
+	</form>
+	<p class="footer-link">Registration is available only via a team invite link.</p>
+</div>
+{{end}}

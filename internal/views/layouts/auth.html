@@ -1,0 +1,18 @@
+{{define "layouts/auth"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{.Title}} — Ladno Teams</title>
+	<link rel="stylesheet" href="/assets/styles/auth.css">
+</head>
+<body>
+	<header class="header">
+		<a href="/" class="brand">Ladno Teams</a>
+		<a href="/login">Sign in</a>
+	</header>
+	<main class="main">{{.Content}}</main>
+</body>
+</html>
+{{end}}

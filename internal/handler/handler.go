@@ -4,6 +4,8 @@ import (
 	"ladno-teams/internal/config"
 	"ladno-teams/internal/handler/validation"
 	"ladno-teams/internal/service"
+	"ladno-teams/internal/views"
+	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -21,6 +23,7 @@ type Handler struct {
 	Admin         IAdminHandler
 	cfg           config.Config
 	services      *service.Service
+	views         *views.Engine
 }
 
 func NewHandler(cfg config.Config, services *service.Service) *Handler {
@@ -32,6 +35,11 @@ func NewHandler(cfg config.Config, services *service.Service) *Handler {
 		_ = v.RegisterValidation(validation.ValidRole, validation.RoleValidation)
 	}
 
+	viewsEngine, err := views.NewEngine()
+	if err != nil {
+		log.Fatalf("Failed to initialize views: %v", err)
+	}
+
 	return &Handler{
 		Auth:          NewAuthHandler(services, validate),
 		User:          NewUserHandler(services, validate),
@@ -40,14 +48,16 @@ func NewHandler(cfg config.Config, services *service.Service) *Handler {
 		Invite:        NewInviteHandler(services),
 		Workspace:     NewWorkspaceHandler(services, validate),
 		WorkspaceRole: NewWorkspaceRoleHandler(services, validate),
-		Admin:         NewAdminHandler(services, validate),
+		Admin:         NewAdminHandler(services, validate, viewsEngine),
 		cfg:           cfg,
 		services:      services,
+		views:         viewsEngine,
 	}
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
+	h.views.RegisterAssets(router)
 
 	router.GET("/", h.HomePage)
 	router.GET("/login", h.AuthLoginPage)

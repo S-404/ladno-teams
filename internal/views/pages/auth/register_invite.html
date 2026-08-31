@@ -1,0 +1,32 @@
+{{define "pages/auth/register_invite"}}
+{{if .IsExpired}}
+<div class="card card-wide">
+	<h1>Register</h1>
+	{{if .TeamName}}<div class="info">Invite to team <strong>{{.TeamName}}</strong></div>{{end}}
+	<div class="error">This invite has expired</div>
+	<p class="footer-link"><a href="/login">Sign in</a></p>
+</div>
+{{else}}
+<div class="card card-wide">
+	<h1>Register</h1>
+	<p class="subtitle">Create an account and join the team</p>
+	{{if .TeamName}}<div class="info">Invite to team <strong>{{.TeamName}}</strong></div>{{end}}
+	{{template "ui/error_block" .ErrorMessage}}
+	<form method="POST" action="/register">
+		<input type="hidden" name="guid" value="{{.GUID}}">
+		<label for="name">Name</label>
+		<input id="name" name="name" type="text" required maxlength="255" autocomplete="name">
+		<label for="login">Login</label>
+		<input id="login" name="login" type="text" autocomplete="username" required>
+		<p class="hint">3–32 characters: letters, digits, _ and -</p>
+		<label for="password">Password</label>
+		<input id="password" name="password" type="password" autocomplete="new-password" required>
+		<p class="hint">6 to 128 characters</p>
+		<label for="password_confirm">Confirm password</label>
+		<input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" required>
+		<button type="submit" class="full">Register</button>
+	</form>
+	<p class="footer-link">Already have an account? <a href="/login">Sign in</a></p>
+</div>
+{{end}}
+{{end}}

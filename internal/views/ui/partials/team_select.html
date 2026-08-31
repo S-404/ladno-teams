@@ -1,0 +1,6 @@
+{{define "ui/team_select"}}
+<option value="">Select team</option>
+{{range .Teams}}
+<option value="{{.Guid}}"{{if eq $.Selected (printf "%s" .Guid)}} selected{{end}}>{{.Name}}</option>
+{{end}}
+{{end}}

@@ -1,0 +1,16 @@
+{{define "partials/admin/teams_section"}}
+<div class="admin-section">
+	{{template "ui/section_header" (sectionHeader "Teams" "Create" "/admin/modals/team")}}
+	{{template "ui/search_bar" .}}
+	<table class="admin-table">
+		<thead>
+			<tr><th>Name</th><th>Description</th><th>Actions</th></tr>
+		</thead>
+		<tbody>
+			{{range .Teams}}
+			{{template "partials/admin/team_row" .}}
+			{{end}}
+		</tbody>
+	</table>
+</div>
+{{end}}

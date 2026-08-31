@@ -1,0 +1,11 @@
+{{define "partials/admin/invite_row"}}
+<tr id="invite-{{.Guid}}">
+	<td class="guid-cell">{{.Guid}} <button type="button" onclick="copyText('{{.Guid}}')">Copy</button></td>
+	<td>{{.TeamName}}</td>
+	<td>{{formatTime .ExpiredAt}}</td>
+	<td class="actions">
+		<button type="button" onclick="copyInviteLink('{{.Guid}}')">Copy link</button>
+		<button class="btn-danger" hx-delete="/admin/invites/{{.Guid}}" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete invite?">Delete</button>
+	</td>
+</tr>
+{{end}}

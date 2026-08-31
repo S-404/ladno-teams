@@ -1,0 +1,11 @@
+{{define "partials/admin/workspace_role_row"}}
+<tr id="wr-{{.WorkspaceGuid}}-{{.TeammateGuid}}">
+	<td>{{.TeamName}}</td>
+	<td>{{.WorkspaceName}}</td>
+	<td>{{.UserName}}</td>
+	<td>{{.Role}}</td>
+	<td class="actions">
+		<button class="btn-danger" hx-delete="/admin/workspace_roles/{{.WorkspaceGuid}}/{{.TeammateGuid}}" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete workspace role?">Delete</button>
+	</td>
+</tr>
+{{end}}

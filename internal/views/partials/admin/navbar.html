@@ -1,0 +1,13 @@
+{{define "partials/admin/navbar"}}
+<div class="navbar">
+	<a hx-get="/admin/users" hx-target="#content" hx-swap="innerHTML">Users</a>
+	<a hx-get="/admin/invites" hx-target="#content" hx-swap="innerHTML">Invites</a>
+	<a hx-get="/admin/teams" hx-target="#content" hx-swap="innerHTML">Teams</a>
+	<a hx-get="/admin/teammates" hx-target="#content" hx-swap="innerHTML">Teammates</a>
+	<a hx-get="/admin/workspaces" hx-target="#content" hx-swap="innerHTML">Workspaces</a>
+	<a hx-get="/admin/workspace_roles" hx-target="#content" hx-swap="innerHTML">Workspace Roles</a>
+	<form method="POST" action="/admin/logout" style="margin-left:auto;">
+		<button type="submit" class="btn-primary">Logout</button>
+	</form>
+</div>
+{{end}}

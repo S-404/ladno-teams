@@ -1,0 +1,14 @@
+{{define "partials/admin/user_row"}}
+<tr id="user-{{.Guid}}">
+	<td>{{.Login}}</td>
+	<td>{{template "ui/bool_checkbox" (checkbox (printf "/admin/users/%s/admin" .Guid) "is_admin" .IsAdmin)}}</td>
+	<td>{{template "ui/bool_checkbox" (checkbox (printf "/admin/users/%s/blocked" .Guid) "is_blocked" .IsBlocked)}}</td>
+	<td>{{strVal .Name}}</td>
+	<td>{{strVal .About}}</td>
+	<td>{{formatTime .CreatedAt}}</td>
+	<td>{{formatTime .UpdatedAt}}</td>
+	<td class="actions">
+		<button class="btn-danger" hx-delete="/admin/users/{{.Guid}}" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete user?">Delete</button>
+	</td>
+</tr>
+{{end}}

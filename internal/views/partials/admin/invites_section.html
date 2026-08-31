@@ -1,0 +1,16 @@
+{{define "partials/admin/invites_section"}}
+<div class="admin-section">
+	{{template "ui/section_header" (sectionHeader "Invites" "Create" "/admin/modals/invite")}}
+	{{template "ui/search_bar" .}}
+	<table class="admin-table">
+		<thead>
+			<tr><th>Guid</th><th>Team</th><th>Expired At</th><th>Actions</th></tr>
+		</thead>
+		<tbody>
+			{{range .Invites}}
+			{{template "partials/admin/invite_row" .}}
+			{{end}}
+		</tbody>
+	</table>
+</div>
+{{end}}

@@ -1,0 +1,16 @@
+{{define "partials/admin/teammates_section"}}
+<div class="admin-section">
+	{{template "ui/section_header" (sectionHeader "Teammates" "Invite" "/admin/modals/invite")}}
+	{{template "ui/search_bar" .}}
+	<table class="admin-table">
+		<thead>
+			<tr><th>Team</th><th>User</th><th>Leader</th><th>Actions</th></tr>
+		</thead>
+		<tbody>
+			{{range .Teammates}}
+			{{template "partials/admin/teammate_row" .}}
+			{{end}}
+		</tbody>
+	</table>
+</div>
+{{end}}

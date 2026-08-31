@@ -1,0 +1,17 @@
+{{define "partials/admin/modals/team"}}
+<div class="modal-backdrop">
+	<div class="modal-card">
+		<h2>Create Team</h2>
+		<form hx-post="/admin/teams" {{modalFormHTMX}}>
+			<label for="name">Name</label>
+			<input id="name" name="name" type="text" required maxlength="255">
+			<label for="description">Description</label>
+			<textarea id="description" name="description" rows="3"></textarea>
+			<div class="modal-actions">
+				<button type="button" onclick="document.getElementById('modal-host').innerHTML=''">Cancel</button>
+				<button type="submit" class="btn-primary">Create</button>
+			</div>
+		</form>
+	</div>
+</div>
+{{end}}

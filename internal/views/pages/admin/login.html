@@ -1,0 +1,13 @@
+{{define "pages/admin/login"}}
+<div class="card">
+	<h1>Admin Login</h1>
+	{{template "ui/error_block" .ErrorMessage}}
+	<form method="POST" action="/admin/login">
+		<label for="login">Login</label>
+		<input id="login" name="login" type="text" autocomplete="username" required>
+		<label for="password">Password</label>
+		<input id="password" name="password" type="password" autocomplete="current-password" required>
+		<button type="submit">Sign in</button>
+	</form>
+</div>
+{{end}}

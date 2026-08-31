@@ -1,0 +1,9 @@
+{{define "partials/admin/team_row"}}
+<tr id="team-{{.Guid}}">
+	<td>{{.Name}}</td>
+	<td>{{strVal .Description}}</td>
+	<td class="actions">
+		<button class="btn-danger" hx-delete="/admin/teams/{{.Guid}}" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete team?">Delete</button>
+	</td>
+</tr>
+{{end}}
