@@ -122,10 +122,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 		admin.GET("/modals/invite", h.Admin.ModalInvite)
 		admin.GET("/modals/team", h.Admin.ModalTeam)
+		admin.GET("/modals/workspace", h.Admin.ModalWorkspace)
 		admin.GET("/modals/workspace-role", h.Admin.ModalWorkspaceRole)
 
 		admin.POST("/invites", h.Admin.CreateInvite)
 		admin.POST("/teams", h.Admin.CreateTeam)
+		admin.POST("/workspaces", h.Admin.CreateWorkspace)
 		admin.POST("/workspace_roles", h.Admin.CreateWorkspaceRole)
 
 		admin.POST("/users/:guid/toggle-block", h.Admin.ToggleUserBlock)

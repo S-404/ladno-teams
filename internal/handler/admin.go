@@ -22,9 +22,11 @@ type IAdminHandler interface {
 	WorkspaceRoles(c *gin.Context)
 	ModalInvite(c *gin.Context)
 	ModalTeam(c *gin.Context)
+	ModalWorkspace(c *gin.Context)
 	ModalWorkspaceRole(c *gin.Context)
 	CreateInvite(c *gin.Context)
 	CreateTeam(c *gin.Context)
+	CreateWorkspace(c *gin.Context)
 	CreateWorkspaceRole(c *gin.Context)
 	ToggleUserBlock(c *gin.Context)
 	ToggleUserAdmin(c *gin.Context)
@@ -122,6 +124,15 @@ func (h *AdminHandler) ModalTeam(c *gin.Context) {
 	renderHTML(c, adminTeamModal())
 }
 
+func (h *AdminHandler) ModalWorkspace(c *gin.Context) {
+	teams, apiErr := h.services.Team.ListAll(1000, 0)
+	if apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+	renderHTML(c, adminWorkspaceModal(teams))
+}
+
 func (h *AdminHandler) ModalWorkspaceRole(c *gin.Context) {
 	workspaces, apiErr := h.services.Admin.ListWorkspaces(1000, 0)
 	if apiErr != nil {
@@ -184,6 +195,37 @@ func (h *AdminHandler) CreateTeam(c *gin.Context) {
 		return
 	}
 	renderHTMLCloseModal(c, adminTeamsSection(teams))
+}
+
+func (h *AdminHandler) CreateWorkspace(c *gin.Context) {
+	teamGuid, ok := h.parseUUIDFromForm(c, "team_guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid team guid"))
+		return
+	}
+
+	name := c.PostForm("name")
+	if name == "" {
+		exception.HttpResponseException(c, exception.BadRequest("name is required"))
+		return
+	}
+
+	if _, apiErr := h.services.Team.GetByGuid(teamGuid); apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+
+	if _, apiErr := h.services.Workspace.AdminCreate(teamGuid, name); apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+
+	workspaces, apiErr := h.services.Admin.ListWorkspaces(1000, 0)
+	if apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+	renderHTMLCloseModal(c, adminWorkspacesSection(workspaces))
 }
 
 func (h *AdminHandler) CreateWorkspaceRole(c *gin.Context) {
@@ -441,5 +483,5 @@ func renderHTML(c *gin.Context, content string) {
 
 func renderHTMLCloseModal(c *gin.Context, content string) {
 	c.Header("HX-Trigger", `{"closeModal":{"target":"body"}}`)
-	renderHTML(c, content+`<div id="modal-host" hx-swap-oob="true"></div>`)
+	renderHTML(c, content+`<div id="modal-host" hx-swap-oob="innerHTML"></div>`)
 }

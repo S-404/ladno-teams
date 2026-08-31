@@ -16,6 +16,7 @@ type IWorkspaceService interface {
 	Update(userGuid, workspaceGuid uuid.UUID, req dto.WorkspaceUpdateRequestDto) (*entity.Workspace, *exception.ApiError)
 	Delete(userGuid, workspaceGuid uuid.UUID) *exception.ApiError
 	AdminDelete(workspaceGuid uuid.UUID) *exception.ApiError
+	AdminCreate(teamGuid uuid.UUID, name string) (*entity.Workspace, *exception.ApiError)
 	ListByTeam(userGuid, teamGuid uuid.UUID, limit, offset int) ([]entity.Workspace, *exception.ApiError)
 	ListAll(limit, offset int) ([]entity.Workspace, *exception.ApiError)
 }
@@ -55,9 +56,9 @@ func (s *WorkspaceService) Create(userGuid, teamGuid uuid.UUID, req dto.Workspac
 		TeamGuid: teamGuid,
 		Name:     req.Name,
 		Version:  version,
-		Data:     req.Data,
-		Config:   req.Config,
-		Envs:     req.Envs,
+		Data:     entity.JSONMapFromDTO(req.Data),
+		Config:   entity.JSONMapFromDTO(req.Config),
+		Envs:     entity.JSONMapFromDTO(req.Envs),
 	})
 	if err != nil {
 		return nil, exception.InternalError(fmt.Sprintf("failed workspace creating: %s", err.Error()))
@@ -95,13 +96,13 @@ func (s *WorkspaceService) Update(userGuid, workspaceGuid uuid.UUID, req dto.Wor
 		workspace.Version = req.Version
 	}
 	if req.Data != nil {
-		workspace.Data = req.Data
+		workspace.Data = entity.JSONMapFromDTO(req.Data)
 	}
 	if req.Config != nil {
-		workspace.Config = req.Config
+		workspace.Config = entity.JSONMapFromDTO(req.Config)
 	}
 	if req.Envs != nil {
-		workspace.Envs = req.Envs
+		workspace.Envs = entity.JSONMapFromDTO(req.Envs)
 	}
 
 	updated, err := s.workspaceRepository.Update(*workspace)
@@ -135,6 +136,26 @@ func (s *WorkspaceService) AdminDelete(workspaceGuid uuid.UUID) *exception.ApiEr
 		return exception.InternalError("failed workspace delete")
 	}
 	return nil
+}
+
+func (s *WorkspaceService) AdminCreate(teamGuid uuid.UUID, name string) (*entity.Workspace, *exception.ApiError) {
+	if name == "" {
+		return nil, exception.BadRequest("name is required")
+	}
+
+	emptyJSON := entity.JSONMap{}
+	workspace, err := s.workspaceRepository.Create(entity.Workspace{
+		TeamGuid: teamGuid,
+		Name:     name,
+		Version:  "v0",
+		Data:     emptyJSON,
+		Config:   emptyJSON,
+		Envs:     emptyJSON,
+	})
+	if err != nil {
+		return nil, exception.InternalError(fmt.Sprintf("failed workspace creating: %s", err.Error()))
+	}
+	return workspace, nil
 }
 
 func (s *WorkspaceService) ListByTeam(userGuid, teamGuid uuid.UUID, limit, offset int) ([]entity.Workspace, *exception.ApiError) {

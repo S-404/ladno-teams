@@ -8,6 +8,8 @@ import (
 
 const adminDateFormat = "2006-01-02 15:04:05"
 
+const adminModalFormHTMX = `hx-target="#content" hx-swap="innerHTML" hx-on::after-request="if(event.detail.successful) closeAdminModal()"`
+
 func adminLayout(content string) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="ru">
@@ -60,10 +62,12 @@ func adminLayout(content string) string {
 			});
 		}
 		window.filterAdminTable = filterAdminTable;
-		document.addEventListener('closeModal', function() {
+		function closeAdminModal() {
 			const host = document.getElementById('modal-host');
 			if (host) host.innerHTML = '';
-		});
+		}
+		window.closeAdminModal = closeAdminModal;
+		document.addEventListener('closeModal', closeAdminModal);
 		document.addEventListener('htmx:beforeSwap', function(evt) {
 			const xhr = evt.detail.xhr;
 			if (!xhr || xhr.status < 200 || xhr.status >= 300) return;
@@ -254,7 +258,7 @@ func adminWorkspacesSection(workspaces []entity.AdminWorkspaceView) string {
 	for _, w := range workspaces {
 		rows += adminWorkspaceRow(w)
 	}
-	return adminListSection(adminSectionHeader("Workspaces", "", ""), fmt.Sprintf(`
+	return adminListSection(adminSectionHeader("Workspaces", "Create", "/admin/modals/workspace"), fmt.Sprintf(`
 <thead><tr><th>Name</th><th>Version</th><th>Team</th><th>Actions</th></tr></thead>
 <tbody>%s</tbody>`, rows))
 }
@@ -295,7 +299,7 @@ func adminInviteModal(teams []entity.Team, selectedTeamGUID string) string {
 	return fmt.Sprintf(`<div class="modal-backdrop">
 	<div class="modal-card">
 		<h2>Create Invite</h2>
-		<form hx-post="/admin/invites" hx-target="#content" hx-swap="innerHTML">
+		<form hx-post="/admin/invites" `+adminModalFormHTMX+`>
 			<label for="team_guid">Team</label>
 			<select id="team_guid" name="team_guid" required>%s</select>
 			<div class="modal-actions">
@@ -311,7 +315,7 @@ func adminTeamModal() string {
 	return `<div class="modal-backdrop">
 	<div class="modal-card">
 		<h2>Create Team</h2>
-		<form hx-post="/admin/teams" hx-target="#content" hx-swap="innerHTML">
+		<form hx-post="/admin/teams" ` + adminModalFormHTMX + `>
 			<label for="name">Name</label>
 			<input id="name" name="name" type="text" required maxlength="255">
 			<label for="description">Description</label>
@@ -323,6 +327,25 @@ func adminTeamModal() string {
 		</form>
 	</div>
 </div>`
+}
+
+func adminWorkspaceModal(teams []entity.Team) string {
+	options := teamSelectOptions(teams, "")
+	return fmt.Sprintf(`<div class="modal-backdrop">
+	<div class="modal-card">
+		<h2>Create Workspace</h2>
+		<form hx-post="/admin/workspaces" `+adminModalFormHTMX+`>
+			<label for="name">Name</label>
+			<input id="name" name="name" type="text" required maxlength="255">
+			<label for="team_guid">Team</label>
+			<select id="team_guid" name="team_guid" required>%s</select>
+			<div class="modal-actions">
+				<button type="button" onclick="document.getElementById('modal-host').innerHTML=''">Cancel</button>
+				<button type="submit" class="btn-primary">Create</button>
+			</div>
+		</form>
+	</div>
+</div>`, options)
 }
 
 func adminWorkspaceRoleModal(workspaces []entity.AdminWorkspaceView, users []entity.AdminUserView) string {
@@ -348,7 +371,7 @@ func adminWorkspaceRoleModal(workspaces []entity.AdminWorkspaceView, users []ent
 	return fmt.Sprintf(`<div class="modal-backdrop">
 	<div class="modal-card">
 		<h2>Create Workspace Role</h2>
-		<form hx-post="/admin/workspace_roles" hx-target="#content" hx-swap="innerHTML">
+		<form hx-post="/admin/workspace_roles" `+adminModalFormHTMX+`>
 			<label for="workspace_guid">Workspace</label>
 			<select id="workspace_guid" name="workspace_guid" required>%s</select>
 			<label for="teammate_guid">User</label>
