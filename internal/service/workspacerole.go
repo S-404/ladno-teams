@@ -12,6 +12,7 @@ import (
 
 type IWorkspaceRoleService interface {
 	Create(userGuid, workspaceGuid uuid.UUID, req dto.WorkspaceRoleCreateRequestDto) (*entity.WorkspaceRole, *exception.ApiError)
+	AdminCreate(workspaceGuid uuid.UUID, req dto.WorkspaceRoleCreateRequestDto) (*entity.WorkspaceRole, *exception.ApiError)
 	ListByWorkspace(userGuid, workspaceGuid uuid.UUID) ([]entity.WorkspaceRole, *exception.ApiError)
 	Update(userGuid, workspaceGuid, teammateGuid uuid.UUID, req dto.WorkspaceRoleUpdateRequestDto) (*entity.WorkspaceRole, *exception.ApiError)
 	Delete(userGuid, workspaceGuid, teammateGuid uuid.UUID) *exception.ApiError
@@ -47,6 +48,27 @@ func (s *WorkspaceRoleService) Create(userGuid, workspaceGuid uuid.UUID, req dto
 
 	if err := s.requireRoleManager(userGuid, workspace); err != nil {
 		return nil, err
+	}
+
+	if _, err := s.teammateRepository.FindByUserAndTeam(req.TeammateGuid, workspace.TeamGuid); err != nil {
+		return nil, exception.EntityNotFoundError("teammate", fmt.Sprintf("user:%s team:%s", req.TeammateGuid, workspace.TeamGuid))
+	}
+
+	role, err := s.workspaceRoleRepository.Create(entity.WorkspaceRole{
+		WorkspaceGuid: workspace.Guid,
+		TeammateGuid:  req.TeammateGuid,
+		Role:          req.Role,
+	})
+	if err != nil {
+		return nil, exception.InternalError(fmt.Sprintf("failed workspace role creating: %s", err.Error()))
+	}
+	return role, nil
+}
+
+func (s *WorkspaceRoleService) AdminCreate(workspaceGuid uuid.UUID, req dto.WorkspaceRoleCreateRequestDto) (*entity.WorkspaceRole, *exception.ApiError) {
+	workspace, err := s.workspaceRepository.FindByGuid(workspaceGuid)
+	if err != nil {
+		return nil, exception.EntityNotFoundError("workspace", fmt.Sprintf("guid:%s", workspaceGuid))
 	}
 
 	if _, err := s.teammateRepository.FindByUserAndTeam(req.TeammateGuid, workspace.TeamGuid); err != nil {

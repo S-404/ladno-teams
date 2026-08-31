@@ -106,17 +106,23 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		admin.GET("/", h.Admin.Index)
 		admin.GET("/users", h.Admin.Users)
-		admin.GET("/profiles", h.Admin.Profiles)
+		admin.GET("/invites", h.Admin.Invites)
 		admin.GET("/teams", h.Admin.Teams)
 		admin.GET("/teammates", h.Admin.Teammates)
-		admin.GET("/invites", h.Admin.Invites)
 		admin.GET("/workspaces", h.Admin.Workspaces)
 		admin.GET("/workspace_roles", h.Admin.WorkspaceRoles)
+
+		admin.GET("/modals/invite", h.Admin.ModalInvite)
+		admin.GET("/modals/team", h.Admin.ModalTeam)
+		admin.GET("/modals/workspace-role", h.Admin.ModalWorkspaceRole)
+
+		admin.POST("/invites", h.Admin.CreateInvite)
+		admin.POST("/teams", h.Admin.CreateTeam)
+		admin.POST("/workspace_roles", h.Admin.CreateWorkspaceRole)
 
 		admin.POST("/users/:guid/toggle-block", h.Admin.ToggleUserBlock)
 		admin.POST("/users/:guid/toggle-admin", h.Admin.ToggleUserAdmin)
 		admin.DELETE("/users/:guid", h.Admin.DeleteUser)
-		admin.DELETE("/profiles/:guid", h.Admin.DeleteProfile)
 		admin.DELETE("/teams/:guid", h.Admin.DeleteTeam)
 		admin.DELETE("/teammates/:user_guid/:team_guid", h.Admin.DeleteTeammate)
 		admin.DELETE("/invites/:guid", h.Admin.DeleteInvite)

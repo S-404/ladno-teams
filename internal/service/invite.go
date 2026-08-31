@@ -13,6 +13,7 @@ import (
 
 type IInviteService interface {
 	Create(teamGuid, leaderUserGuid uuid.UUID) (*entity.Invite, *exception.ApiError)
+	AdminCreate(teamGuid uuid.UUID) (*entity.Invite, *exception.ApiError)
 	GetByGuid(guid uuid.UUID) (*entity.Invite, *exception.ApiError)
 	Accept(inviteGuid, userGuid uuid.UUID) *exception.ApiError
 	RegisterByInvite(req dto.InviteRegisterRequestDto) (*entity.User, *exception.ApiError)
@@ -44,6 +45,21 @@ func NewInviteService(
 		userService:        userService,
 		profileService:     profileService,
 	}
+}
+
+func (s *InviteService) AdminCreate(teamGuid uuid.UUID) (*entity.Invite, *exception.ApiError) {
+	if _, err := s.teamRepository.FindByGuid(teamGuid); err != nil {
+		return nil, exception.EntityNotFoundError("team", fmt.Sprintf("guid:%s", teamGuid))
+	}
+
+	invite, err := s.inviteRepository.Create(entity.Invite{
+		TeamGuid:  teamGuid,
+		ExpiredAt: time.Now().UTC().Add(7 * 24 * time.Hour),
+	})
+	if err != nil {
+		return nil, exception.InternalError(fmt.Sprintf("failed invite creating: %s", err.Error()))
+	}
+	return invite, nil
 }
 
 func (s *InviteService) Create(teamGuid, leaderUserGuid uuid.UUID) (*entity.Invite, *exception.ApiError) {
@@ -133,9 +149,6 @@ func (s *InviteService) RegisterByInvite(req dto.InviteRegisterRequestDto) (*ent
 }
 
 func (s *InviteService) Delete(guid uuid.UUID) *exception.ApiError {
-	if _, apiErr := s.GetByGuid(guid); apiErr != nil {
-		return apiErr
-	}
 	if err := s.inviteRepository.Delete(guid); err != nil {
 		return exception.InternalError("failed invite delete")
 	}

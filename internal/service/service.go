@@ -15,6 +15,7 @@ type Service struct {
 	Invite        IInviteService
 	Workspace     IWorkspaceService
 	WorkspaceRole IWorkspaceRoleService
+	Admin         IAdminService
 }
 
 func NewService(cfg config.Config, repo *repository.Repository) *Service {
@@ -29,6 +30,7 @@ func NewService(cfg config.Config, repo *repository.Repository) *Service {
 	inviteService := NewInviteService(baseService, repo.Invite, repo.Team, repo.Teammate, userService, profileService)
 	workspaceService := NewWorkspaceService(baseService, repo.Workspace, repo.WorkspaceRole, repo.Teammate)
 	workspaceRoleService := NewWorkspaceRoleService(baseService, repo.WorkspaceRole, repo.Workspace, repo.Teammate)
+	adminService := NewAdminService(baseService, repo.Admin)
 
 	return &Service{
 		Auth:          authService,
@@ -40,5 +42,6 @@ func NewService(cfg config.Config, repo *repository.Repository) *Service {
 		Invite:        inviteService,
 		Workspace:     workspaceService,
 		WorkspaceRole: workspaceRoleService,
+		Admin:         adminService,
 	}
 }

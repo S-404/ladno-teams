@@ -13,6 +13,7 @@ type Repository struct {
 	Invite        IInviteRepository
 	Workspace     IWorkspaceRepository
 	WorkspaceRole IWorkspaceRoleRepository
+	Admin         IAdminRepository
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
@@ -27,5 +28,6 @@ func NewRepository(db *sqlx.DB) *Repository {
 		Invite:        NewInviteRepository(baseRepo),
 		Workspace:     NewWorkspaceRepository(baseRepo),
 		WorkspaceRole: NewWorkspaceRoleRepository(baseRepo),
+		Admin:         NewAdminRepository(baseRepo),
 	}
 }
