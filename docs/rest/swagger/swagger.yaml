@@ -1,0 +1,393 @@
+openapi: 3.0.0
+info:
+  title: Ladno Teams API
+  description: Workspace sharing server for teams
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: Created
+  /api/auth/login:
+    post:
+      summary: Login
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+  /api/auth/logout:
+    post:
+      summary: Logout
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+  /api/auth/refresh:
+    post:
+      summary: Refresh access token
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+  /api/auth/invite-register:
+    post:
+      summary: Register by invite
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                guid:
+                  type: string
+                  format: uuid
+                login:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Created
+  /api/auth/accept-invite:
+    post:
+      summary: Accept invite for authenticated user
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                guid:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: OK
+  /api/teams:
+    post:
+      summary: Create team
+      tags:
+        - Teams
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Created
+    get:
+      summary: List my teams
+      tags:
+        - Teams
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/teams/{guid}:
+    get:
+      summary: Get team
+      tags:
+        - Teams
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Update team
+      tags:
+        - Teams
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Delete team
+      tags:
+        - Teams
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /api/teams/{guid}/teammates:
+    get:
+      summary: List teammates
+      tags:
+        - Teammates
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /api/teams/{guid}/invites:
+    post:
+      summary: Create invite
+      tags:
+        - Invites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Created
+  /api/invites/{guid}:
+    get:
+      summary: Check invite
+      tags:
+        - Invites
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /api/workspaces:
+    post:
+      summary: Create workspace
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+                data:
+                  type: object
+                config:
+                  type: object
+                envs:
+                  type: object
+      responses:
+        '201':
+          description: Created
+  /api/workspaces/{guid}:
+    get:
+      summary: Get workspace
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Update workspace
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Delete workspace
+      tags:
+        - Workspaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /api/workspaces/{guid}/roles:
+    post:
+      summary: Create workspace role
+      tags:
+        - Workspace Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teammate_guid:
+                  type: string
+                  format: uuid
+                role:
+                  type: string
+                  enum: [MAINTAINER, DEVELOPER, GUEST]
+      responses:
+        '201':
+          description: Created
+    get:
+      summary: List workspace roles
+      tags:
+        - Workspace Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: guid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /admin:
+    get:
+      summary: Admin panel (HTMX)
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: HTML
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
