@@ -1,8 +1,8 @@
 # Ladno Teams
 
-Небольшой сервер для обмена workspace с командами.
+A small server for sharing workspaces with teams.
 
-## Стек
+## Stack
 
 - Go 1.26
 - PostgreSQL
@@ -12,23 +12,23 @@
 - HTMX admin panel
 - Swagger (docs/rest/swagger/swagger.yaml)
 
-## Запуск
+## Getting started
 
-1. Создайте `.env` по примеру:
+1. Create `.env` from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Убедитесь, что PostgreSQL доступен и создана база `ladno_teams` (или указана в `DB_NAME`).
+2. Make sure PostgreSQL is running and the `ladno_teams` database exists (or set `DB_NAME` accordingly).
 
-3. Примените миграции:
+3. Run migrations:
 
 ```bash
 goose up
 ```
 
-Переменные для goose задаются в `.env`:
+Goose variables are defined in `.env`:
 
 ```env
 GOOSE_DRIVER=postgres
@@ -36,57 +36,57 @@ GOOSE_DBSTRING=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 GOOSE_MIGRATION_DIR=./infrastructure/database/migrations
 ```
 
-4. Запустите сервер:
+4. Start the server:
 
 ```bash
 go run ./cmd
 ```
 
-## Сайт (вход и регистрация по инвайту)
+## Website (sign-in and invite-only registration)
 
-- `http://localhost:8080/` — главная
-- `http://localhost:8080/login` — вход
-- `http://localhost:8080/register?guid=<invite-guid>` — регистрация по инвайту
+- `http://localhost:8080/` — home
+- `http://localhost:8080/login` — sign in
+- `http://localhost:8080/register?guid=<invite-guid>` — register via invite
 
-Регистрация без инвайта недоступна. Клиент использует `POST /api/auth/invite-register` с полем `guid` инвайта.
+Registration without an invite is not available. The client uses `POST /api/auth/invite-register` with the invite `guid` field.
 
-После входа или регистрации на сайте refresh token сохраняется в httpOnly cookie `token` (как и при API-логине).
+After sign-in or registration on the website, the refresh token is stored in the httpOnly `token` cookie (same as API login).
 
-## Админ-панель
+## Admin panel
 
-Откройте в браузере `http://localhost:8080/admin` — при отсутствии сессии произойдёт редирект на страницу входа `http://localhost:8080/admin/login`.
+Open `http://localhost:8080/admin` in your browser — if there is no session, you will be redirected to `http://localhost:8080/admin/login`.
 
-Учётные данные по умолчанию (из `.env`):
+Default credentials (from `.env`):
 
 - login: `admin`
 - password: `admin`
 
-Первый админ создается автоматически на основе переменных `ADMIN_LOGIN`/`ADMIN_PASSWORD`/`ADMIN_NAME`.
+The first admin is created automatically from `ADMIN_LOGIN`, `ADMIN_PASSWORD`, and `ADMIN_NAME`.
 
 ## API
 
-- `POST /api/auth/login` — логин (возвращает access token, refresh token в httpOnly cookie)
-- `POST /api/auth/logout` — выход
-- `POST /api/auth/refresh` — обновление access token
-- `POST /api/auth/invite-register` — регистрация по инвайту
-- `POST /api/auth/accept-invite` — принятие инвайта авторизованным пользователем
-- `POST /api/teams` — создать команду
-- `GET /api/teams` — мои команды
-- `GET|PUT|DELETE /api/teams/:guid` — управление командой (только лидер)
-- `POST /api/teams/:guid/invites` — создать инвайт (лидер)
-- `GET /api/teams/:guid/teammates` — список участников
-- `PUT|DELETE /api/teams/:guid/teammates/:user_guid` — управление участниками (лидер)
-- `POST /api/teams/:guid/workspaces` — создать workspace (лидер)
-- `GET /api/teams/:guid/workspaces` — список workspace в команде
-- `GET|PUT|DELETE /api/workspaces/:guid` — доступ к workspace по ролям
-- `POST /api/workspaces/:guid/roles` — назначить роль в workspace (лидер/maintainer)
-- `GET /api/workspaces/:guid/roles` — список ролей
-- `PUT|DELETE /api/workspaces/:guid/roles/:teammate_guid` — управление ролями
+- `POST /api/auth/login` — sign in (returns access token, refresh token in httpOnly cookie)
+- `POST /api/auth/logout` — sign out
+- `POST /api/auth/refresh` — refresh access token
+- `POST /api/auth/invite-register` — register via invite
+- `POST /api/auth/accept-invite` — accept invite as an authenticated user
+- `POST /api/teams` — create a team
+- `GET /api/teams` — my teams
+- `GET|PUT|DELETE /api/teams/:guid` — manage team (leader only)
+- `POST /api/teams/:guid/invites` — create invite (leader)
+- `GET /api/teams/:guid/teammates` — list teammates
+- `PUT|DELETE /api/teams/:guid/teammates/:user_guid` — manage teammates (leader)
+- `POST /api/teams/:guid/workspaces` — create workspace (leader)
+- `GET /api/teams/:guid/workspaces` — list workspaces in team
+- `GET|PUT|DELETE /api/workspaces/:guid` — workspace access by role
+- `POST /api/workspaces/:guid/roles` — assign workspace role (leader/maintainer)
+- `GET /api/workspaces/:guid/roles` — list roles
+- `PUT|DELETE /api/workspaces/:guid/roles/:teammate_guid` — manage roles
 
-## Роли в workspace
+## Workspace roles
 
-- `MAINTAINER` — полное управление workspace
-- `DEVELOPER` — обновление workspace
-- `GUEST` — только чтение
+- `MAINTAINER` — full workspace management
+- `DEVELOPER` — update workspace
+- `GUEST` — read-only
 
-Лидеры команды автоматически имеют права владельца на все workspace своей команды.
+Team leaders automatically have owner permissions on all workspaces in their team.
