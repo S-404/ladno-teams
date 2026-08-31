@@ -21,12 +21,12 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
 	tpl, err := template.New("").Funcs(templateFuncs()).ParseFS(
 		files,
-		"layouts/*.html",
-		"pages/admin/*.html",
-		"pages/auth/*.html",
-		"partials/admin/*.html",
-		"partials/admin/modals/*.html",
-		"ui/partials/*.html",
+		"layouts/*.gohtml",
+		"pages/admin/*.gohtml",
+		"pages/auth/*.gohtml",
+		"partials/admin/*.gohtml",
+		"partials/admin/modals/*.gohtml",
+		"ui/partials/*.gohtml",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("parse views: %w", err)
