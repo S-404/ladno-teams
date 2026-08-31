@@ -12,7 +12,6 @@ import (
 )
 
 type IAuthHandler interface {
-	Register(c *gin.Context)
 	Login(c *gin.Context)
 	Logout(c *gin.Context)
 	RefreshAccessToken(c *gin.Context)
@@ -30,21 +29,6 @@ func NewAuthHandler(services *service.Service, validate *validator.Validate) *Au
 		BaseHandler: *NewBaseHandler(validate),
 		services:    services,
 	}
-}
-
-func (h *AuthHandler) Register(c *gin.Context) {
-	var req dto.AuthRequestDto
-	if err := h.ValidateRequestBody(c, &req); err != nil {
-		exception.HttpResponseException(c, exception.RequestValidationError(err.Error()))
-		return
-	}
-
-	if _, apiErr := h.services.User.Create(req); apiErr != nil {
-		exception.HttpResponseException(c, apiErr)
-		return
-	}
-
-	c.JSON(http.StatusCreated, dto.EmptyResponse{})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {

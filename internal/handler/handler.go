@@ -49,9 +49,17 @@ func NewHandler(cfg config.Config, services *service.Service) *Handler {
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
+	router.GET("/", h.HomePage)
+	router.GET("/login", h.AuthLoginPage)
+	router.POST("/login", h.AuthLoginSubmit)
+	router.GET("/register", h.AuthRegisterPage)
+	router.POST("/register", h.AuthRegisterSubmit)
+	router.GET("/register/invite", h.AuthInviteRegisterPage)
+	router.POST("/register/invite", h.AuthInviteRegisterSubmit)
+	router.POST("/logout", h.AuthLogout)
+
 	auth := router.Group("api/auth")
 	{
-		auth.POST("/register", h.Auth.Register)
 		auth.POST("/login", h.Auth.Login)
 		auth.POST("/logout", h.Auth.Logout)
 		auth.POST("/refresh", h.Auth.RefreshAccessToken)
@@ -122,9 +130,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 		admin.POST("/users/:guid/toggle-block", h.Admin.ToggleUserBlock)
 		admin.POST("/users/:guid/toggle-admin", h.Admin.ToggleUserAdmin)
+		admin.POST("/users/:guid/admin", h.Admin.UpdateUserAdmin)
+		admin.POST("/users/:guid/blocked", h.Admin.UpdateUserBlocked)
 		admin.DELETE("/users/:guid", h.Admin.DeleteUser)
 		admin.DELETE("/teams/:guid", h.Admin.DeleteTeam)
 		admin.DELETE("/teammates/:user_guid/:team_guid", h.Admin.DeleteTeammate)
+		admin.POST("/teammates/:user_guid/:team_guid/leader", h.Admin.UpdateTeammateLeader)
 		admin.DELETE("/invites/:guid", h.Admin.DeleteInvite)
 		admin.DELETE("/workspaces/:guid", h.Admin.DeleteWorkspace)
 		admin.DELETE("/workspace_roles/:workspace_guid/:teammate_guid", h.Admin.DeleteWorkspaceRole)

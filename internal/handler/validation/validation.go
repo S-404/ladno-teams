@@ -16,6 +16,10 @@ const (
 var loginRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,32}$`)
 var passwordRegex = regexp.MustCompile(`^.{6,128}$`)
 
+// LoginRegex and PasswordRegex are exported for HTML form validation.
+var LoginRegex = loginRegex
+var PasswordRegex = passwordRegex
+
 func LoginValidation(fl validator.FieldLevel) bool {
 	return loginRegex.MatchString(fl.Field().String())
 }

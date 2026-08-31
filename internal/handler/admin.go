@@ -28,9 +28,12 @@ type IAdminHandler interface {
 	CreateWorkspaceRole(c *gin.Context)
 	ToggleUserBlock(c *gin.Context)
 	ToggleUserAdmin(c *gin.Context)
+	UpdateUserAdmin(c *gin.Context)
+	UpdateUserBlocked(c *gin.Context)
 	DeleteUser(c *gin.Context)
 	DeleteTeam(c *gin.Context)
 	DeleteTeammate(c *gin.Context)
+	UpdateTeammateLeader(c *gin.Context)
 	DeleteInvite(c *gin.Context)
 	DeleteWorkspace(c *gin.Context)
 	DeleteWorkspaceRole(c *gin.Context)
@@ -266,6 +269,38 @@ func (h *AdminHandler) ToggleUserAdmin(c *gin.Context) {
 	renderHTML(c, adminUserRow(*view))
 }
 
+func (h *AdminHandler) UpdateUserAdmin(c *gin.Context) {
+	guid, ok := h.parseUUID(c, "guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid user guid"))
+		return
+	}
+
+	isAdmin := c.PostForm("is_admin") == "true"
+	if _, apiErr := h.services.User.AdminUpdate(guid, dto.UserAdminUpdateRequestDto{IsAdmin: &isAdmin}); apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+
+	renderAdminDeleteResponse(c)
+}
+
+func (h *AdminHandler) UpdateUserBlocked(c *gin.Context) {
+	guid, ok := h.parseUUID(c, "guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid user guid"))
+		return
+	}
+
+	isBlocked := c.PostForm("is_blocked") == "true"
+	if _, apiErr := h.services.User.AdminUpdate(guid, dto.UserAdminUpdateRequestDto{IsBlocked: &isBlocked}); apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+
+	renderAdminDeleteResponse(c)
+}
+
 func (h *AdminHandler) DeleteUser(c *gin.Context) {
 	guid, ok := h.parseUUID(c, "guid")
 	if !ok {
@@ -278,7 +313,7 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	renderAdminDeleteResponse(c)
 }
 
 func (h *AdminHandler) DeleteTeam(c *gin.Context) {
@@ -293,7 +328,7 @@ func (h *AdminHandler) DeleteTeam(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	renderAdminDeleteResponse(c)
 }
 
 func (h *AdminHandler) DeleteTeammate(c *gin.Context) {
@@ -313,7 +348,29 @@ func (h *AdminHandler) DeleteTeammate(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	renderAdminDeleteResponse(c)
+}
+
+func (h *AdminHandler) UpdateTeammateLeader(c *gin.Context) {
+	userGuid, ok := h.parseUUID(c, "user_guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid user guid"))
+		return
+	}
+	teamGuid, ok := h.parseUUID(c, "team_guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid team guid"))
+		return
+	}
+
+	isLeader := c.PostForm("is_leader") == "true"
+
+	if _, apiErr := h.services.Teammate.AdminUpdate(userGuid, teamGuid, isLeader); apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+
+	renderAdminDeleteResponse(c)
 }
 
 func (h *AdminHandler) DeleteInvite(c *gin.Context) {
@@ -328,7 +385,7 @@ func (h *AdminHandler) DeleteInvite(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	renderAdminDeleteResponse(c)
 }
 
 func (h *AdminHandler) DeleteWorkspace(c *gin.Context) {
@@ -343,7 +400,7 @@ func (h *AdminHandler) DeleteWorkspace(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	renderAdminDeleteResponse(c)
 }
 
 func (h *AdminHandler) DeleteWorkspaceRole(c *gin.Context) {
@@ -363,7 +420,11 @@ func (h *AdminHandler) DeleteWorkspaceRole(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	renderAdminDeleteResponse(c)
+}
+
+func renderAdminDeleteResponse(c *gin.Context) {
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(""))
 }
 
 func (h *AdminHandler) parseUUIDFromForm(c *gin.Context, field string) (uuid.UUID, bool) {

@@ -42,6 +42,16 @@ GOOSE_MIGRATION_DIR=./infrastructure/database/migrations
 go run ./cmd
 ```
 
+## Сайт (вход и регистрация по инвайту)
+
+- `http://localhost:8080/` — главная
+- `http://localhost:8080/login` — вход
+- `http://localhost:8080/register?guid=<invite-guid>` — регистрация по инвайту
+
+Регистрация без инвайта недоступна. Клиент использует `POST /api/auth/invite-register` с полем `guid` инвайта.
+
+После входа или регистрации на сайте refresh token сохраняется в httpOnly cookie `token` (как и при API-логине).
+
 ## Админ-панель
 
 Откройте в браузере `http://localhost:8080/admin` — при отсутствии сессии произойдёт редирект на страницу входа `http://localhost:8080/admin/login`.
@@ -55,7 +65,6 @@ go run ./cmd
 
 ## API
 
-- `POST /api/auth/register` — регистрация
 - `POST /api/auth/login` — логин (возвращает access token, refresh token в httpOnly cookie)
 - `POST /api/auth/logout` — выход
 - `POST /api/auth/refresh` — обновление access token

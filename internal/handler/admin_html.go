@@ -39,14 +39,41 @@ func adminLayout(content string) string {
 		.modal-card input, .modal-card select, .modal-card textarea { width: 100%%; padding: 0.5rem; margin-bottom: 1rem; box-sizing: border-box; }
 		.modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 		.guid-cell { font-family: monospace; font-size: 0.85rem; word-break: break-all; }
+		.admin-section { margin-bottom: 1rem; }
+		.section-search { margin-bottom: 1rem; }
+		.section-search input { width: 100%%; max-width: 360px; padding: 0.5rem 0.65rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+		.section-search input:focus { outline: none; border-color: #333; box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }
 	</style>
 	<script>
 		function copyText(text) {
 			navigator.clipboard.writeText(text);
 		}
+		function copyInviteLink(guid) {
+			copyText(window.location.origin + '/register?guid=' + guid);
+		}
+		function filterAdminTable(input) {
+			const section = input.closest('.admin-section');
+			if (!section) return;
+			const query = input.value.toLowerCase().trim();
+			section.querySelectorAll('tbody tr').forEach(function(row) {
+				row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+			});
+		}
+		window.filterAdminTable = filterAdminTable;
 		document.addEventListener('closeModal', function() {
 			const host = document.getElementById('modal-host');
 			if (host) host.innerHTML = '';
+		});
+		document.addEventListener('htmx:beforeSwap', function(evt) {
+			const xhr = evt.detail.xhr;
+			if (!xhr || xhr.status < 200 || xhr.status >= 300) return;
+			if (xhr.responseText && xhr.responseText.trim() !== '') return;
+			const target = evt.detail.target;
+			if (target && target.tagName === 'TR') {
+				evt.detail.shouldSwap = false;
+				target.classList.add('htmx-swapping');
+				setTimeout(function() { target.remove(); }, 300);
+			}
 		});
 	</script>
 </head>
@@ -84,44 +111,64 @@ func adminSectionHeader(title, actionLabel, actionURL string) string {
 	return fmt.Sprintf(`<div class="section-header"><h1>%s</h1>%s</div>`, html.EscapeString(title), action)
 }
 
+func adminSearchBar() string {
+	return `<div class="section-search"><input type="search" class="admin-search-input" placeholder="Поиск..." autocomplete="off" oninput="filterAdminTable(this)"></div>`
+}
+
+func adminListSection(header, tableInner string) string {
+	return fmt.Sprintf(`<div class="admin-section">%s%s<table class="admin-table">%s</table></div>`, header, adminSearchBar(), tableInner)
+}
+
+func adminBoolCheckboxForm(postURL, fieldName string, checked bool) string {
+	checkedAttr := ""
+	value := "false"
+	if checked {
+		checkedAttr = " checked"
+		value = "true"
+	}
+	return fmt.Sprintf(`<form hx-post="%s" hx-trigger="change" hx-swap="none"
+		hx-on::after-request="if(!event.detail.successful){const cb=this.querySelector('input[type=checkbox]');if(cb)cb.checked=!cb.checked;}">
+		<input type="hidden" name="%s" value="%s">
+		<input type="checkbox"%s onchange="this.form.querySelector('input[name=%s]').value=this.checked?'true':'false'">
+	</form>`,
+		html.EscapeString(postURL),
+		html.EscapeString(fieldName),
+		value,
+		checkedAttr,
+		html.EscapeString(fieldName),
+	)
+}
+
 func adminUsersSection(users []entity.AdminUserView) string {
 	rows := ""
 	for _, u := range users {
 		rows += adminUserRow(u)
 	}
-	return adminSectionHeader("Users", "Invite", "/admin/modals/invite") + fmt.Sprintf(`
-<table>
+	return adminListSection(adminSectionHeader("Users", "Invite", "/admin/modals/invite"), fmt.Sprintf(`
 <thead><tr><th>Login</th><th>Admin</th><th>Blocked</th><th>Name</th><th>About</th><th>Created</th><th>Updated</th><th>Actions</th></tr></thead>
-<tbody>%s</tbody>
-</table>`, rows)
+<tbody>%s</tbody>`, rows))
 }
 
 func adminUserRow(u entity.AdminUserView) string {
-	adminLabel := "Make admin"
-	if u.IsAdmin {
-		adminLabel = "Revoke admin"
-	}
-	blockLabel := "Block"
-	if u.IsBlocked {
-		blockLabel = "Unblock"
-	}
+	guid := u.Guid.String()
 	return fmt.Sprintf(`<tr id="user-%s">
-	<td>%s</td><td>%v</td><td>%v</td><td>%s</td><td>%s</td>
+	<td>%s</td>
+	<td>%s</td>
+	<td>%s</td>
+	<td>%s</td><td>%s</td>
 	<td>%s</td><td>%s</td>
 	<td class="actions">
-		<button hx-post="/admin/users/%s/toggle-admin" hx-target="#user-%s" hx-swap="outerHTML">%s</button>
-		<button hx-post="/admin/users/%s/toggle-block" hx-target="#user-%s" hx-swap="outerHTML">%s</button>
-		<button class="btn-danger" hx-delete="/admin/users/%s" hx-target="#user-%s" hx-swap="outerHTML swap:0.3s" hx-confirm="Delete user?">Delete</button>
+		<button class="btn-danger" hx-delete="/admin/users/%s" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete user?">Delete</button>
 	</td>
 </tr>`,
-		u.Guid,
-		html.EscapeString(u.Login), u.IsAdmin, u.IsBlocked,
+		guid,
+		html.EscapeString(u.Login),
+		adminBoolCheckboxForm("/admin/users/"+guid+"/admin", "is_admin", u.IsAdmin),
+		adminBoolCheckboxForm("/admin/users/"+guid+"/blocked", "is_blocked", u.IsBlocked),
 		html.EscapeString(strVal(u.Name)), html.EscapeString(strVal(u.About)),
 		html.EscapeString(u.CreatedAt.Format(adminDateFormat)),
 		html.EscapeString(u.UpdatedAt.Format(adminDateFormat)),
-		u.Guid, u.Guid, adminLabel,
-		u.Guid, u.Guid, blockLabel,
-		u.Guid, u.Guid,
+		guid,
 	)
 }
 
@@ -130,11 +177,9 @@ func adminInvitesSection(invites []entity.AdminInviteView) string {
 	for _, inv := range invites {
 		rows += adminInviteRow(inv)
 	}
-	return adminSectionHeader("Invites", "Create", "/admin/modals/invite") + fmt.Sprintf(`
-<table>
+	return adminListSection(adminSectionHeader("Invites", "Create", "/admin/modals/invite"), fmt.Sprintf(`
 <thead><tr><th>Guid</th><th>Team</th><th>Expired At</th><th>Actions</th></tr></thead>
-<tbody>%s</tbody>
-</table>`, rows)
+<tbody>%s</tbody>`, rows))
 }
 
 func adminInviteRow(inv entity.AdminInviteView) string {
@@ -143,7 +188,10 @@ func adminInviteRow(inv entity.AdminInviteView) string {
 	<td class="guid-cell">%s <button type="button" onclick="copyText('%s')">Copy</button></td>
 	<td>%s</td>
 	<td>%s</td>
-	<td class="actions"><button class="btn-danger" hx-delete="/admin/invites/%s" hx-target="#invite-%s" hx-swap="outerHTML swap:0.3s" hx-confirm="Delete invite?">Delete</button></td>
+	<td class="actions">
+		<button type="button" onclick="copyInviteLink('%s')">Copy link</button>
+		<button class="btn-danger" hx-delete="/admin/invites/%s" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete invite?">Delete</button>
+	</td>
 </tr>`,
 		guid, html.EscapeString(guid), guid,
 		html.EscapeString(inv.TeamName),
@@ -157,20 +205,18 @@ func adminTeamsSection(teams []entity.Team) string {
 	for _, t := range teams {
 		rows += adminTeamRow(t)
 	}
-	return adminSectionHeader("Teams", "Create", "/admin/modals/team") + fmt.Sprintf(`
-<table>
+	return adminListSection(adminSectionHeader("Teams", "Create", "/admin/modals/team"), fmt.Sprintf(`
 <thead><tr><th>Name</th><th>Description</th><th>Actions</th></tr></thead>
-<tbody>%s</tbody>
-</table>`, rows)
+<tbody>%s</tbody>`, rows))
 }
 
 func adminTeamRow(t entity.Team) string {
 	return fmt.Sprintf(`<tr id="team-%s">
 	<td>%s</td><td>%s</td>
-	<td class="actions"><button class="btn-danger" hx-delete="/admin/teams/%s" hx-target="#team-%s" hx-swap="outerHTML swap:0.3s" hx-confirm="Delete team?">Delete</button></td>
+	<td class="actions"><button class="btn-danger" hx-delete="/admin/teams/%s" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete team?">Delete</button></td>
 </tr>`,
 		t.Guid, html.EscapeString(t.Name), html.EscapeString(strVal(t.Description)),
-		t.Guid, t.Guid,
+		t.Guid,
 	)
 }
 
@@ -179,26 +225,27 @@ func adminTeammatesSection(teammates []entity.AdminTeammateView) string {
 	for _, tm := range teammates {
 		rows += adminTeammateRow(tm)
 	}
-	return adminSectionHeader("Teammates", "Invite", "/admin/modals/invite") + fmt.Sprintf(`
-<table>
+	return adminListSection(adminSectionHeader("Teammates", "Invite", "/admin/modals/invite"), fmt.Sprintf(`
 <thead><tr><th>Team</th><th>User</th><th>Leader</th><th>Actions</th></tr></thead>
-<tbody>%s</tbody>
-</table>`, rows)
+<tbody>%s</tbody>`, rows))
 }
 
 func adminTeammateRow(tm entity.AdminTeammateView) string {
-	inviteURL := fmt.Sprintf("/admin/modals/invite?team_guid=%s", tm.TeamGuid)
 	return fmt.Sprintf(`<tr id="teammate-%s-%s">
-	<td>%s</td><td>%s</td><td>%v</td>
+	<td>%s</td><td>%s</td>
+	<td>%s</td>
 	<td class="actions">
-		<button hx-get="%s" hx-target="#modal-host" hx-swap="innerHTML">Invite</button>
-		<button class="btn-danger" hx-delete="/admin/teammates/%s/%s" hx-target="#teammate-%s-%s" hx-swap="outerHTML swap:0.3s" hx-confirm="Delete teammate?">Delete</button>
+		<button class="btn-danger" hx-delete="/admin/teammates/%s/%s" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete teammate?">Delete</button>
 	</td>
 </tr>`,
 		tm.UserGuid, tm.TeamGuid,
-		html.EscapeString(tm.TeamName), html.EscapeString(tm.UserName), tm.IsLeader,
-		html.EscapeString(inviteURL),
-		tm.UserGuid, tm.TeamGuid, tm.UserGuid, tm.TeamGuid,
+		html.EscapeString(tm.TeamName), html.EscapeString(tm.UserName),
+		adminBoolCheckboxForm(
+			fmt.Sprintf("/admin/teammates/%s/%s/leader", tm.UserGuid, tm.TeamGuid),
+			"is_leader",
+			tm.IsLeader,
+		),
+		tm.UserGuid, tm.TeamGuid,
 	)
 }
 
@@ -207,20 +254,18 @@ func adminWorkspacesSection(workspaces []entity.AdminWorkspaceView) string {
 	for _, w := range workspaces {
 		rows += adminWorkspaceRow(w)
 	}
-	return adminSectionHeader("Workspaces", "", "") + fmt.Sprintf(`
-<table>
+	return adminListSection(adminSectionHeader("Workspaces", "", ""), fmt.Sprintf(`
 <thead><tr><th>Name</th><th>Version</th><th>Team</th><th>Actions</th></tr></thead>
-<tbody>%s</tbody>
-</table>`, rows)
+<tbody>%s</tbody>`, rows))
 }
 
 func adminWorkspaceRow(w entity.AdminWorkspaceView) string {
 	return fmt.Sprintf(`<tr id="workspace-%s">
 	<td>%s</td><td>%s</td><td>%s</td>
-	<td class="actions"><button class="btn-danger" hx-delete="/admin/workspaces/%s" hx-target="#workspace-%s" hx-swap="outerHTML swap:0.3s" hx-confirm="Delete workspace?">Delete</button></td>
+	<td class="actions"><button class="btn-danger" hx-delete="/admin/workspaces/%s" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete workspace?">Delete</button></td>
 </tr>`,
 		w.Guid, html.EscapeString(w.Name), html.EscapeString(w.Version), html.EscapeString(w.TeamName),
-		w.Guid, w.Guid,
+		w.Guid,
 	)
 }
 
@@ -229,21 +274,19 @@ func adminWorkspaceRolesSection(roles []entity.AdminWorkspaceRoleView) string {
 	for _, r := range roles {
 		rows += adminWorkspaceRoleRow(r)
 	}
-	return adminSectionHeader("Workspace Roles", "Create", "/admin/modals/workspace-role") + fmt.Sprintf(`
-<table>
+	return adminListSection(adminSectionHeader("Workspace Roles", "Create", "/admin/modals/workspace-role"), fmt.Sprintf(`
 <thead><tr><th>Team</th><th>Workspace</th><th>User</th><th>Role</th><th>Actions</th></tr></thead>
-<tbody>%s</tbody>
-</table>`, rows)
+<tbody>%s</tbody>`, rows))
 }
 
 func adminWorkspaceRoleRow(r entity.AdminWorkspaceRoleView) string {
 	return fmt.Sprintf(`<tr id="wr-%s-%s">
 	<td>%s</td><td>%s</td><td>%s</td><td>%s</td>
-	<td class="actions"><button class="btn-danger" hx-delete="/admin/workspace_roles/%s/%s" hx-target="#wr-%s-%s" hx-swap="outerHTML swap:0.3s" hx-confirm="Delete workspace role?">Delete</button></td>
+	<td class="actions"><button class="btn-danger" hx-delete="/admin/workspace_roles/%s/%s" hx-target="closest tr" hx-swap="outerHTML settle:0.3s" hx-confirm="Delete workspace role?">Delete</button></td>
 </tr>`,
 		r.WorkspaceGuid, r.TeammateGuid,
 		html.EscapeString(r.TeamName), html.EscapeString(r.WorkspaceName), html.EscapeString(r.UserName), html.EscapeString(string(r.Role)),
-		r.WorkspaceGuid, r.TeammateGuid, r.WorkspaceGuid, r.TeammateGuid,
+		r.WorkspaceGuid, r.TeammateGuid,
 	)
 }
 

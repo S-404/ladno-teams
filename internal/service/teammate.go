@@ -16,6 +16,7 @@ type ITeammateService interface {
 	Update(actorGuid, teamGuid, targetUserGuid uuid.UUID, req dto.TeammateUpdateRequestDto) (*entity.Teammate, *exception.ApiError)
 	Delete(actorGuid, teamGuid, targetUserGuid uuid.UUID) *exception.ApiError
 	AdminDelete(userGuid, teamGuid uuid.UUID) *exception.ApiError
+	AdminUpdate(userGuid, teamGuid uuid.UUID, isLeader bool) (*entity.Teammate, *exception.ApiError)
 	IsLeader(userGuid, teamGuid uuid.UUID) (bool, *exception.ApiError)
 	IsMember(userGuid, teamGuid uuid.UUID) (bool, *exception.ApiError)
 }
@@ -117,6 +118,22 @@ func (s *TeammateService) AdminDelete(userGuid, teamGuid uuid.UUID) *exception.A
 		return exception.InternalError("failed teammate delete")
 	}
 	return nil
+}
+
+func (s *TeammateService) AdminUpdate(userGuid, teamGuid uuid.UUID, isLeader bool) (*entity.Teammate, *exception.ApiError) {
+	if _, err := s.teammateRepository.FindByUserAndTeam(userGuid, teamGuid); err != nil {
+		return nil, exception.EntityNotFoundError("teammate", fmt.Sprintf("user:%s team:%s", userGuid, teamGuid))
+	}
+
+	updated, err := s.teammateRepository.Update(entity.Teammate{
+		UserGuid: userGuid,
+		TeamGuid: teamGuid,
+		IsLeader: isLeader,
+	})
+	if err != nil {
+		return nil, exception.InternalError("failed teammate update")
+	}
+	return updated, nil
 }
 
 func (s *TeammateService) IsLeader(userGuid, teamGuid uuid.UUID) (bool, *exception.ApiError) {
