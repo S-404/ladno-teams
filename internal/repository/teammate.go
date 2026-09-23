@@ -11,6 +11,7 @@ type ITeammateRepository interface {
 	Create(data entity.Teammate) (*entity.Teammate, error)
 	FindByUserAndTeam(userGuid, teamGuid uuid.UUID) (*entity.Teammate, error)
 	FindByTeam(teamGuid uuid.UUID) ([]entity.Teammate, error)
+	FindByTeamWithUser(teamGuid uuid.UUID) ([]entity.TeammateListItem, error)
 	Update(data entity.Teammate) (*entity.Teammate, error)
 	Delete(userGuid, teamGuid uuid.UUID) error
 	IsLeader(userGuid, teamGuid uuid.UUID) (bool, error)
@@ -67,6 +68,23 @@ func (r *TeammateRepository) FindByTeam(teamGuid uuid.UUID) ([]entity.Teammate, 
 		return nil, err
 	}
 	return teammates, nil
+}
+
+func (r *TeammateRepository) FindByTeamWithUser(teamGuid uuid.UUID) ([]entity.TeammateListItem, error) {
+	var rows []entity.TeammateListItem
+	query := `
+		SELECT tm.user_guid, tm.team_guid, tm.is_leader, tm.created_at,
+		       u.login AS user_login,
+		       p.name AS profile_name
+		FROM teammates tm
+		JOIN users u ON u.guid = tm.user_guid AND u.deleted_at IS NULL
+		LEFT JOIN profiles p ON p.user_guid = u.guid
+		WHERE tm.team_guid = $1
+		ORDER BY tm.created_at`
+	if err := r.db.Select(&rows, query, teamGuid); err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 func (r *TeammateRepository) Update(data entity.Teammate) (*entity.Teammate, error) {

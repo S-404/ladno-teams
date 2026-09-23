@@ -44,11 +44,19 @@ func (h *TeammateHandler) List(c *gin.Context) {
 
 	response := make([]dto.TeammateListResponseDto, 0, len(teammates))
 	for _, t := range teammates {
+		user := dto.TeammateUserDto{
+			Guid:  t.UserGuid,
+			Login: t.UserLogin,
+		}
+		if t.ProfileName != nil && *t.ProfileName != "" {
+			user.Profile = &dto.TeammateProfileDto{Name: *t.ProfileName}
+		}
 		response = append(response, dto.TeammateListResponseDto{
 			UserGuid:  t.UserGuid,
 			TeamGuid:  t.TeamGuid,
 			IsLeader:  t.IsLeader,
 			CreatedAt: t.CreatedAt.Format("2006-01-02 15:04:05"),
+			User:      user,
 		})
 	}
 

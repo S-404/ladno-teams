@@ -12,7 +12,7 @@ import (
 
 type ITeammateService interface {
 	Create(userGuid, teamGuid uuid.UUID, isLeader bool) (*entity.Teammate, *exception.ApiError)
-	ListByTeam(teamGuid uuid.UUID) ([]entity.Teammate, *exception.ApiError)
+	ListByTeam(teamGuid uuid.UUID) ([]entity.TeammateListItem, *exception.ApiError)
 	Update(actorGuid, teamGuid, targetUserGuid uuid.UUID, req dto.TeammateUpdateRequestDto) (*entity.Teammate, *exception.ApiError)
 	Delete(actorGuid, teamGuid, targetUserGuid uuid.UUID) *exception.ApiError
 	AdminDelete(userGuid, teamGuid uuid.UUID) *exception.ApiError
@@ -45,8 +45,8 @@ func (s *TeammateService) Create(userGuid, teamGuid uuid.UUID, isLeader bool) (*
 	return teammate, nil
 }
 
-func (s *TeammateService) ListByTeam(teamGuid uuid.UUID) ([]entity.Teammate, *exception.ApiError) {
-	teammates, err := s.teammateRepository.FindByTeam(teamGuid)
+func (s *TeammateService) ListByTeam(teamGuid uuid.UUID) ([]entity.TeammateListItem, *exception.ApiError) {
+	teammates, err := s.teammateRepository.FindByTeamWithUser(teamGuid)
 	if err != nil {
 		return nil, exception.InternalError("failed list teammates")
 	}
