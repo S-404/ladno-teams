@@ -13,6 +13,8 @@ import (
 
 type IInviteHandler interface {
 	Create(c *gin.Context)
+	ListByTeam(c *gin.Context)
+	Delete(c *gin.Context)
 	Get(c *gin.Context)
 }
 
@@ -52,6 +54,63 @@ func (h *InviteHandler) Create(c *gin.Context) {
 		TeamGuid:  invite.TeamGuid,
 		ExpiredAt: invite.ExpiredAt,
 	})
+}
+
+func (h *InviteHandler) ListByTeam(c *gin.Context) {
+	user, err := GetCtxUser(c)
+	if err != nil {
+		exception.HttpResponseException(c, exception.AuthError("Unauthed"))
+		return
+	}
+
+	teamGuid, ok := h.parseUUID(c, "guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid team guid"))
+		return
+	}
+
+	invites, apiErr := h.services.Invite.ListByTeam(teamGuid, user.Guid)
+	if apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+
+	response := make([]dto.InviteCreateResponseDto, 0, len(invites))
+	for _, inv := range invites {
+		response = append(response, dto.InviteCreateResponseDto{
+			Guid:      inv.Guid,
+			TeamGuid:  inv.TeamGuid,
+			ExpiredAt: inv.ExpiredAt,
+		})
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *InviteHandler) Delete(c *gin.Context) {
+	user, err := GetCtxUser(c)
+	if err != nil {
+		exception.HttpResponseException(c, exception.AuthError("Unauthed"))
+		return
+	}
+
+	teamGuid, ok := h.parseUUID(c, "guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid team guid"))
+		return
+	}
+
+	inviteGuid, ok := h.parseUUID(c, "invite_guid")
+	if !ok {
+		exception.HttpResponseException(c, exception.BadRequest("invalid invite guid"))
+		return
+	}
+
+	if apiErr := h.services.Invite.DeleteByLeader(teamGuid, inviteGuid, user.Guid); apiErr != nil {
+		exception.HttpResponseException(c, apiErr)
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.EmptyResponse{})
 }
 
 func (h *InviteHandler) Get(c *gin.Context) {

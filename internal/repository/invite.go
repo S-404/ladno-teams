@@ -11,7 +11,9 @@ import (
 type IInviteRepository interface {
 	Create(data entity.Invite) (*entity.Invite, error)
 	FindByGuid(guid uuid.UUID) (*entity.Invite, error)
+	FindByTeam(teamGuid uuid.UUID) ([]entity.Invite, error)
 	Delete(guid uuid.UUID) error
+	DeleteByTeam(inviteGuid, teamGuid uuid.UUID) (bool, error)
 	DeleteExpired() error
 }
 
@@ -57,10 +59,35 @@ func (r *InviteRepository) FindByGuid(guid uuid.UUID) (*entity.Invite, error) {
 	return &invite, nil
 }
 
+func (r *InviteRepository) FindByTeam(teamGuid uuid.UUID) ([]entity.Invite, error) {
+	var invites []entity.Invite
+	query := fmt.Sprintf(`
+		SELECT * FROM %s
+		WHERE team_guid = $1
+		ORDER BY created_at DESC`, r.table)
+	if err := r.db.Select(&invites, query, teamGuid); err != nil {
+		return nil, err
+	}
+	return invites, nil
+}
+
 func (r *InviteRepository) Delete(guid uuid.UUID) error {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE guid = $1`, r.table)
 	_, err := r.db.Exec(query, guid)
 	return err
+}
+
+func (r *InviteRepository) DeleteByTeam(inviteGuid, teamGuid uuid.UUID) (bool, error) {
+	query := fmt.Sprintf(`DELETE FROM %s WHERE guid = $1 AND team_guid = $2`, r.table)
+	res, err := r.db.Exec(query, inviteGuid, teamGuid)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 func (r *InviteRepository) DeleteExpired() error {

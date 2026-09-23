@@ -14,10 +14,12 @@ import (
 type IInviteService interface {
 	Create(teamGuid, leaderUserGuid uuid.UUID) (*entity.Invite, *exception.ApiError)
 	AdminCreate(teamGuid uuid.UUID) (*entity.Invite, *exception.ApiError)
+	ListByTeam(teamGuid, leaderUserGuid uuid.UUID) ([]entity.Invite, *exception.ApiError)
 	GetByGuid(guid uuid.UUID) (*entity.Invite, *exception.ApiError)
 	Accept(inviteGuid, userGuid uuid.UUID) *exception.ApiError
 	RegisterByInvite(req dto.InviteRegisterRequestDto) (*entity.User, *exception.ApiError)
 	Delete(guid uuid.UUID) *exception.ApiError
+	DeleteByLeader(teamGuid, inviteGuid, leaderUserGuid uuid.UUID) *exception.ApiError
 }
 
 type InviteService struct {
@@ -76,6 +78,19 @@ func (s *InviteService) Create(teamGuid, leaderUserGuid uuid.UUID) (*entity.Invi
 		return nil, exception.InternalError(fmt.Sprintf("failed invite creating: %s", err.Error()))
 	}
 	return invite, nil
+}
+
+func (s *InviteService) ListByTeam(teamGuid, leaderUserGuid uuid.UUID) ([]entity.Invite, *exception.ApiError) {
+	isLeader, err := s.teammateRepository.IsLeader(leaderUserGuid, teamGuid)
+	if err != nil || !isLeader {
+		return nil, exception.Forbidden("leader access required")
+	}
+
+	invites, err := s.inviteRepository.FindByTeam(teamGuid)
+	if err != nil {
+		return nil, exception.InternalError("failed list invites")
+	}
+	return invites, nil
 }
 
 func (s *InviteService) GetByGuid(guid uuid.UUID) (*entity.Invite, *exception.ApiError) {
@@ -151,6 +166,22 @@ func (s *InviteService) RegisterByInvite(req dto.InviteRegisterRequestDto) (*ent
 func (s *InviteService) Delete(guid uuid.UUID) *exception.ApiError {
 	if err := s.inviteRepository.Delete(guid); err != nil {
 		return exception.InternalError("failed invite delete")
+	}
+	return nil
+}
+
+func (s *InviteService) DeleteByLeader(teamGuid, inviteGuid, leaderUserGuid uuid.UUID) *exception.ApiError {
+	isLeader, err := s.teammateRepository.IsLeader(leaderUserGuid, teamGuid)
+	if err != nil || !isLeader {
+		return exception.Forbidden("leader access required")
+	}
+
+	ok, err := s.inviteRepository.DeleteByTeam(inviteGuid, teamGuid)
+	if err != nil {
+		return exception.InternalError("failed invite delete")
+	}
+	if !ok {
+		return exception.EntityNotFoundError("invite", fmt.Sprintf("guid:%s", inviteGuid))
 	}
 	return nil
 }

@@ -97,6 +97,8 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			teams.PUT("/:guid", h.Team.Update)
 			teams.DELETE("/:guid", h.Team.Delete)
 			teams.POST("/:guid/invites", h.Invite.Create)
+			teams.GET("/:guid/invites", h.Invite.ListByTeam)
+			teams.DELETE("/:guid/invites/:invite_guid", h.Invite.Delete)
 			teams.GET("/:guid/teammates", h.Teammate.List)
 			teams.PUT("/:guid/teammates/:user_guid", h.Teammate.Update)
 			teams.DELETE("/:guid/teammates/:user_guid", h.Teammate.Delete)
