@@ -2,7 +2,9 @@ package service
 
 import (
 	"ladno-teams/internal/config"
+	"ladno-teams/internal/gitstore"
 	"ladno-teams/internal/repository"
+	"log"
 )
 
 type Service struct {
@@ -16,10 +18,16 @@ type Service struct {
 	Workspace     IWorkspaceService
 	WorkspaceRole IWorkspaceRoleService
 	Admin         IAdminService
+	GitStore      *gitstore.Store
 }
 
 func NewService(cfg config.Config, repo *repository.Repository) *Service {
 	baseService := NewBaseService(cfg)
+
+	gitStore, err := gitstore.New(cfg.GitReposRoot)
+	if err != nil {
+		log.Fatalf("Failed to init gitstore: %v", err)
+	}
 
 	userService := NewUserService(baseService, repo.User)
 	profileService := NewProfileService(baseService, repo.Profile)
@@ -28,7 +36,7 @@ func NewService(cfg config.Config, repo *repository.Repository) *Service {
 	teamService := NewTeamService(baseService, repo.Team, repo.Teammate)
 	teammateService := NewTeammateService(baseService, repo.Teammate)
 	inviteService := NewInviteService(baseService, repo.Invite, repo.Team, repo.Teammate, userService, profileService)
-	workspaceService := NewWorkspaceService(baseService, repo.Workspace, repo.WorkspaceRole, repo.Teammate)
+	workspaceService := NewWorkspaceService(baseService, repo.Workspace, repo.WorkspaceRole, repo.Teammate, gitStore)
 	workspaceRoleService := NewWorkspaceRoleService(baseService, repo.WorkspaceRole, repo.Workspace, repo.Teammate)
 	adminService := NewAdminService(baseService, repo.Admin)
 
@@ -43,5 +51,6 @@ func NewService(cfg config.Config, repo *repository.Repository) *Service {
 		Workspace:     workspaceService,
 		WorkspaceRole: workspaceRoleService,
 		Admin:         adminService,
+		GitStore:      gitStore,
 	}
 }

@@ -89,6 +89,7 @@ func (h *WorkspaceHandler) ListByTeam(c *gin.Context) {
 			TeamGuid:  w.TeamGuid,
 			Name:      w.Name,
 			Version:   w.Version,
+			GitURL:    "/git/workspaces/" + w.Guid.String(),
 			CreatedAt: w.CreatedAt.Format("2006-01-02 15:04:05"),
 			UpdatedAt: w.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})

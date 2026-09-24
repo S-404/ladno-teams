@@ -26,6 +26,7 @@ type Config struct {
 	AdminLogin    string `env:"ADMIN_LOGIN"`
 	AdminPassword string `env:"ADMIN_PASSWORD"`
 	AdminName     string `env:"ADMIN_NAME"`
+	GitReposRoot  string `env:"GIT_REPOS_ROOT"`
 }
 
 func LoadEnv() (*Config, error) {
@@ -49,6 +50,7 @@ func LoadEnv() (*Config, error) {
 	cfg.AdminLogin = getEnv("ADMIN_LOGIN", "admin")
 	cfg.AdminPassword = getEnv("ADMIN_PASSWORD", "admin")
 	cfg.AdminName = getEnv("ADMIN_NAME", "Administrator")
+	cfg.GitReposRoot = getEnv("GIT_REPOS_ROOT", "./data/git-repos")
 
 	if err := cfg.ValidateRequired(); err != nil {
 		return nil, err

@@ -23,6 +23,7 @@ type WorkspaceListResponseDto struct {
 	TeamGuid  uuid.UUID `json:"team_guid"`
 	Name      string    `json:"name"`
 	Version   string    `json:"version"`
+	GitURL    string    `json:"git_url,omitempty"`
 	CreatedAt string    `json:"created_at"`
 	UpdatedAt string    `json:"updated_at"`
 }

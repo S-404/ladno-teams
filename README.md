@@ -83,6 +83,20 @@ The first admin is created automatically from `ADMIN_LOGIN`, `ADMIN_PASSWORD`, a
 - `GET /api/workspaces/:guid/roles` — list roles
 - `PUT|DELETE /api/workspaces/:guid/roles/:teammate_guid` — manage roles
 
+## Workspace git sync
+
+Each team workspace has a bare git repository on disk. The Fyne client clones it and uses pull/push instead of overwriting JSONB snapshots.
+
+- Config: `GIT_REPOS_ROOT` (default `./data/git-repos`) — see `.env.example`
+- Path layout: `{GIT_REPOS_ROOT}/{workspace-guid}.git`
+- Git HTTP (JWT Bearer, same as REST):
+  - `GET /git/workspaces/:guid/info/refs?service=git-upload-pack|git-receive-pack`
+  - `POST /git/workspaces/:guid/git-upload-pack`
+  - `POST /git/workspaces/:guid/git-receive-pack`
+- Roles: `GUEST` can fetch; `DEVELOPER`+ can push. Team leaders have full access.
+
+Requires a system `git` binary on the server PATH (smart HTTP uses `git --stateless-rpc`).
+
 ## Workspace roles
 
 - `MAINTAINER` — full workspace management

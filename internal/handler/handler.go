@@ -21,6 +21,7 @@ type Handler struct {
 	Workspace     IWorkspaceHandler
 	WorkspaceRole IWorkspaceRoleHandler
 	Admin         IAdminHandler
+	Git           *GitHandler
 	cfg           config.Config
 	services      *service.Service
 	views         *views.Engine
@@ -49,6 +50,7 @@ func NewHandler(cfg config.Config, services *service.Service) *Handler {
 		Workspace:     NewWorkspaceHandler(services, validate),
 		WorkspaceRole: NewWorkspaceRoleHandler(services, validate),
 		Admin:         NewAdminHandler(services, validate, viewsEngine),
+		Git:           NewGitHandler(services.Workspace, services.GitStore),
 		cfg:           cfg,
 		services:      services,
 		views:         viewsEngine,
@@ -116,6 +118,13 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			workspaces.PUT("/:guid/roles/:teammate_guid", h.WorkspaceRole.Update)
 			workspaces.DELETE("/:guid/roles/:teammate_guid", h.WorkspaceRole.Delete)
 		}
+	}
+
+	git := router.Group("/git/workspaces", h.authMiddleware)
+	{
+		git.GET("/:guid/info/refs", h.Git.InfoRefs)
+		git.POST("/:guid/git-upload-pack", h.Git.UploadPack)
+		git.POST("/:guid/git-receive-pack", h.Git.ReceivePack)
 	}
 
 	router.GET("/admin/login", h.AdminLoginPage)

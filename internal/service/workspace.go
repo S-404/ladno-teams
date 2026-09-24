@@ -5,7 +5,9 @@ import (
 	"ladno-teams/internal/entity"
 	"ladno-teams/internal/entity/dto"
 	"ladno-teams/internal/exception"
+	"ladno-teams/internal/gitstore"
 	"ladno-teams/internal/repository"
+	"log"
 
 	"github.com/google/uuid"
 )
@@ -19,6 +21,9 @@ type IWorkspaceService interface {
 	AdminCreate(teamGuid uuid.UUID, name string) (*entity.Workspace, *exception.ApiError)
 	ListByTeam(userGuid, teamGuid uuid.UUID, limit, offset int) ([]entity.Workspace, *exception.ApiError)
 	ListAll(limit, offset int) ([]entity.Workspace, *exception.ApiError)
+	AuthorizeGitRead(userGuid, workspaceGuid uuid.UUID) *exception.ApiError
+	AuthorizeGitWrite(userGuid, workspaceGuid uuid.UUID) *exception.ApiError
+	EnsureGitRepo(workspaceGuid uuid.UUID) error
 }
 
 type WorkspaceService struct {
@@ -26,6 +31,7 @@ type WorkspaceService struct {
 	workspaceRepository     repository.IWorkspaceRepository
 	workspaceRoleRepository repository.IWorkspaceRoleRepository
 	teammateRepository      repository.ITeammateRepository
+	gitStore                *gitstore.Store
 }
 
 func NewWorkspaceService(
@@ -33,12 +39,14 @@ func NewWorkspaceService(
 	workspaceRepository repository.IWorkspaceRepository,
 	workspaceRoleRepository repository.IWorkspaceRoleRepository,
 	teammateRepository repository.ITeammateRepository,
+	gitStore *gitstore.Store,
 ) *WorkspaceService {
 	return &WorkspaceService{
 		BaseService:             *baseService,
 		workspaceRepository:     workspaceRepository,
 		workspaceRoleRepository: workspaceRoleRepository,
 		teammateRepository:      teammateRepository,
+		gitStore:                gitStore,
 	}
 }
 
@@ -62,6 +70,13 @@ func (s *WorkspaceService) Create(userGuid, teamGuid uuid.UUID, req dto.Workspac
 	})
 	if err != nil {
 		return nil, exception.InternalError(fmt.Sprintf("failed workspace creating: %s", err.Error()))
+	}
+	if s.gitStore != nil {
+		if gerr := s.gitStore.Init(workspace.Guid, workspace.Name, workspace.Version); gerr != nil {
+			log.Printf("[gitstore] init workspace %s: %v", workspace.Guid, gerr)
+			_ = s.workspaceRepository.Delete(workspace.Guid)
+			return nil, exception.InternalError("failed workspace git repo init")
+		}
 	}
 	return workspace, nil
 }
@@ -125,6 +140,11 @@ func (s *WorkspaceService) Delete(userGuid, workspaceGuid uuid.UUID) *exception.
 	if err := s.workspaceRepository.Delete(workspaceGuid); err != nil {
 		return exception.InternalError("failed workspace delete")
 	}
+	if s.gitStore != nil {
+		if gerr := s.gitStore.Delete(workspaceGuid); gerr != nil {
+			log.Printf("[gitstore] delete workspace %s: %v", workspaceGuid, gerr)
+		}
+	}
 	return nil
 }
 
@@ -134,6 +154,9 @@ func (s *WorkspaceService) AdminDelete(workspaceGuid uuid.UUID) *exception.ApiEr
 	}
 	if err := s.workspaceRepository.Delete(workspaceGuid); err != nil {
 		return exception.InternalError("failed workspace delete")
+	}
+	if s.gitStore != nil {
+		_ = s.gitStore.Delete(workspaceGuid)
 	}
 	return nil
 }
@@ -154,6 +177,13 @@ func (s *WorkspaceService) AdminCreate(teamGuid uuid.UUID, name string) (*entity
 	})
 	if err != nil {
 		return nil, exception.InternalError(fmt.Sprintf("failed workspace creating: %s", err.Error()))
+	}
+	if s.gitStore != nil {
+		if gerr := s.gitStore.Init(workspace.Guid, workspace.Name, workspace.Version); gerr != nil {
+			log.Printf("[gitstore] admin init workspace %s: %v", workspace.Guid, gerr)
+			_ = s.workspaceRepository.Delete(workspace.Guid)
+			return nil, exception.InternalError("failed workspace git repo init")
+		}
 	}
 	return workspace, nil
 }
@@ -177,6 +207,36 @@ func (s *WorkspaceService) ListAll(limit, offset int) ([]entity.Workspace, *exce
 		return nil, exception.InternalError("failed list workspaces")
 	}
 	return workspaces, nil
+}
+
+func (s *WorkspaceService) AuthorizeGitRead(userGuid, workspaceGuid uuid.UUID) *exception.ApiError {
+	workspace, err := s.workspaceRepository.FindByGuid(workspaceGuid)
+	if err != nil {
+		return exception.EntityNotFoundError("workspace", fmt.Sprintf("guid:%s", workspaceGuid))
+	}
+	return s.requireReadAccess(userGuid, workspace)
+}
+
+func (s *WorkspaceService) AuthorizeGitWrite(userGuid, workspaceGuid uuid.UUID) *exception.ApiError {
+	workspace, err := s.workspaceRepository.FindByGuid(workspaceGuid)
+	if err != nil {
+		return exception.EntityNotFoundError("workspace", fmt.Sprintf("guid:%s", workspaceGuid))
+	}
+	if apiErr := s.requireReadAccess(userGuid, workspace); apiErr != nil {
+		return apiErr
+	}
+	return s.requireWriteAccess(userGuid, workspace)
+}
+
+func (s *WorkspaceService) EnsureGitRepo(workspaceGuid uuid.UUID) error {
+	if s.gitStore == nil {
+		return fmt.Errorf("git store unavailable")
+	}
+	ws, err := s.workspaceRepository.FindByGuid(workspaceGuid)
+	if err != nil {
+		return err
+	}
+	return s.gitStore.Ensure(workspaceGuid, ws.Name, ws.Version)
 }
 
 func (s *WorkspaceService) requireLeader(userGuid, teamGuid uuid.UUID) *exception.ApiError {
